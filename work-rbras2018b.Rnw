@@ -1,0 +1,136 @@
+\documentclass[12pt, a4paper]{article}
+
+%-----------------------------------------------------------------------
+% Preamble by the organize commitee
+
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{url}
+\usepackage{enumerate}
+\usepackage{amsmath, amsthm, amsfonts, amssymb, amsxtra}
+\usepackage{bm}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{$63^{\textrm{a}}$ RBras}
+\rhead{23 a 25 de maio de 2018, Curitiba - PR}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\addtolength{\headheight}{12.0pt}
+
+%-------------------------------------------
+% Aditional latex packages
+\usepackage{natbib}
+\bibliographystyle{agsm}
+\usepackage[bottom]{footmisc}
+\usepackage{booktabs}
+\usepackage{threeparttable}
+\usepackage{tabularx}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\DeclareRobustCommand{\rchi}{{\mathpalette\irchi\relax}}
+\newcommand{\irchi}[2]{\raisebox{\depth}{$#1\chi$}}
+\usepackage{float}
+\makeatletter
+\def\@xfootnote[#1]{%
+  \protected@xdef\@thefnmark{#1}%
+  \@footnotemark\@footnotetext}
+\makeatother
+
+\usepackage{hyperref}
+\definecolor{mycol}{rgb}{0.0, 0.0, 0.5}
+\urlstyle{tt}
+\makeatletter
+\hypersetup{
+  pdftitle={\@title},
+  pdfauthor={\@author},
+  colorlinks=true,
+  linkcolor=mycol,
+  citecolor=mycol,
+  filecolor=mycol,
+  urlcolor=mycol,
+  bookmarksdepth=4
+}
+\makeatother
+
+\usepackage[brazilian]{cleveref}
+
+%-----------------------------------------------------------------------
+% Init the document
+
+\begin{document}
+\onehalfspacing
+
+<<setup, cache=FALSE, echo=FALSE, warning=FALSE, message=FALSE>>=
+
+# Settings for general options
+library(xtable)
+options(digits = 3, OutDec = ",",
+        xtable.caption.placement = "top",
+        xtable.booktabs = TRUE,
+        xtable.sanitize.text.function = identity)
+
+# Settings for knitr chunks
+library(knitr)
+opts_chunk$set(
+    warning = FALSE,
+    message = FALSE,
+    echo = FALSE,
+    results = "hide",
+    fig.width = 7,
+    fig.height = 5,
+    fig.align = "center",
+    fig.pos = "h",
+    dev.args = list(family = "Palatino"))
+
+# # Reads the codes for the paper
+# read_chunk("codes/rbras2018b.R")
+
+@
+
+%-------------------------------------------
+% Título
+\begin{center}
+  \textbf{
+    \Large{Estratégias para análise de contagens sub e superdispersas}
+  } \\[1em]
+\end{center}
+
+%-------------------------------------------
+% Autores
+\begin{flushright}
+  {\bf Eduardo Elias Ribeiro Junior}
+  \footnote[$\dagger$]{Contato:
+    \href{mailto:jreduardo@usp.br}{\tt jreduardo@usp.br}}
+  \footnote[1]{Departamento de Ciências Exatas (LCE) - ESALQ-USP}
+  \footnote[2]{Laboratório de Estatística e Geoinformação (LEG) -
+    UFPR}\\
+  {\bf Clarice Garcia Borges Demétrio} \footnotemark[1]
+\end{flushright}
+
+\vspace*{0.5cm}
+
+%-------------------------------------------
+% Conteúdo
+
+\section{Introdução}
+
+\section{Modelos probabilísticos}
+
+\section{Análise de dados}
+
+\section{Considerações finais}
+
+%-------------------------------------------
+% Referências
+\pagebreak
+
+\small
+\bibliography{rbras2018}
+
+\end{document}
