@@ -29,12 +29,14 @@ llcmp <- function(params, beta = NULL,
 }
 
 # Probability mass function for COM-Poisson
-dcmp <- function(y, mu, phi, sumto = 500L) {
-    vapply(y, function(yi) {
-        exp(-llcmp(params = c(phi, log(mu)),
-                   X = cbind(1L),
-                   y = yi))
-    }, numeric(1))
+dcmp <- function(y, mu, phi, sumto = 500L, log = FALSE) {
+    nu <- exp(phi)
+    lrlambda <- log(mu + (nu - 1)/(2*nu))
+    j <- 1:sumto
+    Z <- 1 + sum(exp(j * nu * lrlambda - nu * lfactorial(j)))
+    out <- y * nu * lrlambda - nu * lfactorial(y) - log(Z)
+    if (!log) out <- exp(out)
+    return(out)
 }
 
 # Moments for COM-Poisson
@@ -73,12 +75,16 @@ llgct <- function (params, X, y) {
 }
 
 # Probability mass function for Gamma-Count
-dgct <- function(y, kapa, gama) {
-    vapply(y, function(yi) {
-        exp(-llgct(params = c(gama, log(kapa)),
-                   X = cbind(1L),
-                   y = yi))
-    }, numeric(1))
+dgct <- function(y, kapa, gama, log = FALSE) {
+    alpha <- exp(gama)
+    out <- pgamma(q = 1L,
+                  shape = alpha * y,
+                  rate = alpha * kapa) -
+        pgamma(q = 1L,
+               shape = alpha * (y + 1),
+               rate = alpha * kapa)
+    if (log) out <- log(out)
+    return(out)
 }
 
 # Moments for Gamma-Count
@@ -117,12 +123,17 @@ llgpo <- function (params, X, y) {
 }
 
 # Probability mass function for Gamma-Count
-dgpo <- function(y, mu, sigma) {
-    vapply(y, function(yi) {
-        exp(-llgpo(params = c(sigma, log(mu)),
-                   X = cbind(1L),
-                   y = yi))
-    }, numeric(1))
+dgpo <- function(y, mu, sigma, log = FALSE) {
+    sigma_mu <- 1 + sigma * mu
+    sigma_y <- 1 + sigma * y
+    out <- suppressWarnings(
+        y * (log(mu) - log(sigma_mu)) +
+        (y - 1) * log(sigma_y) -
+        mu * (sigma_y / sigma_mu) -
+        lfactorial(y))
+    out[is.nan(out)] <- -Inf
+    if (!log) out <- exp(out)
+    return(out)
 }
 
 # Moments for Poisson generalizada
