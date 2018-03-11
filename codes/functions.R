@@ -90,9 +90,8 @@ dgct <- function(y, kapa, gama, log = FALSE) {
 # Moments for Gamma-Count
 moments_gct <- function(kapa, gama, tol = 1e-6) {
     alpha <- exp(gama)
-    ap_mean <- kapa / alpha
-    ap_stde <- sqrt(kapa) / alpha
-    ymax <- ceiling(ap_mean + 5 * ap_stde)
+    ap_stde <- sqrt(kapa / alpha)
+    ymax <- ceiling(kapa + 5 * ap_stde)
     pmax <- dgct(ymax, kapa, gama)
     # Verifica se prob(ymax) é pequena o suficiente
     while (pmax > tol) {
@@ -138,8 +137,7 @@ dgpo <- function(y, mu, sigma, log = FALSE) {
 
 # Moments for Poisson generalizada
 moments_gpo <- function(mu, sigma) {
-    psi <- exp(sigma)
-    variance <- mu * (1 - mu * psi)^2
+    variance <- mu * (1 + mu * sigma)^2
     return(list("mean" = mu, "variance" = variance))
 }
 
@@ -167,8 +165,10 @@ system_equation <- function(param,
     return(c(eq1, eq2))
 }
 
-get_parameters <- function(expect, di, ...,
-                           model = c("CMP", "GCT", "GPo", "PTw")) {
+get_parameters <- function(expect, di,
+                           model = c("CMP", "GCT", "GPo", "PTw"),
+                           ...) {
+    model <- match.arg(model)
     if (model %in% c("CMP", "GCT")) {
         fun <- if (model == "CMP") moments_cmp else moments_gct
         safely_fun <- function(x) list(root = c(NA, NA))
@@ -185,14 +185,53 @@ get_parameters <- function(expect, di, ...,
         out <- out$root
     }
     if (model == "GPo") {
-        if (sqrt(di) < 1L) return(c(NA, NA))
-        out <- c(expect, log((sqrt(di) - 1)) - log(expect))
+        # if (sqrt(di) < 1L) return(c(NA, NA))
+        out <- c(expect, (sqrt(di) - 1)/expect)
     }
     if (model == "PTw") {
         p <- list(...)$p
         if (di < 1L) return(c(NA, NA))
         out <- c(expect, (di - 1)/expect^(p - 1))
     }
+    return(out)
+}
+
+#-----------------------------------------------------------------------
+# Check if pmf is a genuine probability function
+check_pmf <- function(params, y = 0:500, tol = 1e-2,
+                      model = c("CMP", "GCT", "GPo"),
+                      ...) {
+    model <- match.arg(model)
+    pmf <- switch(model,
+                  "CMP" = dcmp,
+                  "GCT" = dgct,
+                  "GPo" = dgpo)
+    spr <- sum(pmf(y, params[1], params[2], ...))
+    out <- ifelse(abs(1 - spr) > tol, 0L, 1L)
+    return(out)
+}
+
+#-----------------------------------------------------------------------
+# Auxiliary function to build mean and variance data
+make_mvdata <- function(settings, model) {
+    # Parameters
+    lista <- settings[[model]]
+    p1 <- lista[[1]]
+    p2 <- lista[[2]]
+    aux <- expand.grid(
+        par1 = seq(p1[1], p1[2], length.out = 70),
+        par2 = seq(p2[1], p2[2], length.out = 20),
+        KEEP.OUT.ATTRS = FALSE)
+    wrap_moments <- function(x, ...) {
+        names(x) <- names(lista)[1:2]
+        args <- c(x, lista[-c(1:2, length(lista))])
+        out <- do.call(lista$fun, args)
+        unlist(out)
+    }
+    moments <- t(apply(aux, 1L, wrap_moments))
+    colnames(moments) <- c("mean", "variance")
+    out <- cbind(aux, moments)
+    out <- transform(out, di = variance / mean)
     return(out)
 }
 
@@ -227,7 +266,7 @@ fit_cm <- function(formula,
     # Ajuste do modelo
     compute_loglik <- settings[["ll"]]
     bbmle::parnames(compute_loglik) <- names(start)
-    fixed <- list(X = X, y = y, formula = formula)
+    fixed <- list(X = X, y = y, formula = formula, model = model)
     if (model == "CMP") fixed[["sumto"]] <- sumto
     fit <- suppressWarnings(
         bbmle::mle2(compute_loglik,
@@ -236,4 +275,110 @@ fit_cm <- function(formula,
                     method = "BFGS",
                     vecpar = TRUE))
     return(fit)
+}
+
+#-----------------------------------------------------------------------
+# Fitted values and confidence intervals
+eta2mean_gct <- function(eta, gama, tol = 1e-5) {
+    vapply(eta, function(etai) {
+        alpha <- exp(gama)
+        kapa <- exp(etai)
+        ap_stde <- sqrt(kapa / alpha)
+        ymax <- ceiling(kapa + 5 * ap_stde)
+        pmax <- dgct(ymax, kapa, gama)
+        # Verifica se prob(ymax) é pequena o suficiente
+        while (pmax > tol) {
+            ymax <- ymax + 1L
+            pmax <- dgct(ymax, kapa, gama)
+        }
+        yrange <- 1:ymax
+        expectat <- sum(yrange   * dgct(yrange, kapa, gama))
+        return(expectat)
+    }, FUN.VALUE = double(1))
+}
+
+predict_ptw <- function(object,
+                        newdata,
+                        type = c("response", "link"),
+                        interval = c("confidence", "none"),
+                        level = 0.95,
+                        augment_data = TRUE) {
+    type <- match.arg(type)
+    interval <- match.arg(interval)
+    #-------------------------------------------
+    Vcov <- vcov(object)
+    indb <- grep("beta", rownames(Vcov))
+    Vmar <- as.matrix(Vcov[indb, indb])
+    #-------------------------------------------
+    formula <- object$linear_pred[[1]]
+    formula[[2]] <- NULL
+    beta <- coef(object)[indb, "Estimates"]
+    #-------------------------------------------
+    X <- model.matrix(formula, newdata)
+    est <- X %*% beta
+    if (interval == "none") {
+        out <- data.frame("fit" = est)
+    }
+    if (interval == "confidence") {
+        qn <- -qnorm((1 - level[1])/2)
+        std <- sqrt(diag(tcrossprod(X %*% Vmar, X)))
+        out <- data.frame("fit" = est,
+                          "lwr" = est - qn * std,
+                          "upr" = est + qn * std)
+    }
+    if (type == "response") {
+        out <- data.frame(apply(out, 2L, exp))
+    }
+    if (augment_data) out <- cbind(newdata, out)
+    return(out)
+}
+
+predict_cm <- function(object,
+                       newdata,
+                       type = c("response", "link"),
+                       interval = c("confidence", "none"),
+                       level = 0.95,
+                       augment_data = TRUE) {
+    #-------------------------------------------
+    if (class(object) == "mcglm") {
+        out <- predict_ptw(object, newdata, type,
+                           interval, level, augment_data)
+        return(out)
+    }
+    #-------------------------------------------
+    type <- match.arg(type)
+    interval <- match.arg(interval)
+    model <- object@data$model
+    #-------------------------------------------
+    Vcov <- vcov(object)
+    Vbeta <- Vcov[-1, -1, drop = FALSE]
+    Vdisp <- Vcov[ 1,  1, drop = FALSE]
+    Vbedi <- Vcov[ 1, -1]
+    #-------------------------------------------
+    Vcond <- Vbeta - tcrossprod(Vbedi %*% solve(Vdisp), Vbedi)
+    formula <- object@data$formula
+    formula[[2]] <- NULL
+    beta <- object@coef[-1]
+    #-------------------------------------------
+    X <- model.matrix(formula, newdata)
+    est <- X %*% beta
+    if (interval == "none") {
+        out <- data.frame("fit" = est)
+    }
+    if (interval == "confidence") {
+        qn <- -qnorm((1 - level[1])/2)
+        std <- sqrt(diag(tcrossprod(X %*% Vcond, X)))
+        out <- data.frame("fit" = est,
+                          "lwr" = est - qn * std,
+                          "upr" = est + qn * std)
+    }
+    if (type == "response") {
+        if (model == "GCT")
+            out <- data.frame(apply(out, 2L, eta2mean_gct,
+                                    gama = object@coef[1]))
+        else
+            out <- data.frame(apply(out, 2L, exp))
+    }
+    if (augment_data) out <- cbind(newdata, out)
+    return(out)
 }
