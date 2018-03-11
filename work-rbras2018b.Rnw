@@ -32,7 +32,8 @@
 \usepackage{booktabs}
 \usepackage{threeparttable}
 \usepackage{tabularx}
-\newcolumntype{C}{>{\centering\arraybackslash}X}
+\usepackage{makecell}
+
 \DeclareRobustCommand{\rchi}{{\mathpalette\irchi\relax}}
 \newcommand{\irchi}[2]{\raisebox{\depth}{$#1\chi$}}
 \usepackage{float}
@@ -57,8 +58,8 @@
   bookmarksdepth=4
 }
 \makeatother
-
 \usepackage[brazilian]{cleveref}
+
 
 %-----------------------------------------------------------------------
 % Init the document
@@ -85,11 +86,25 @@ opts_chunk$set(
     fig.width = 7,
     fig.height = 5,
     fig.align = "center",
-    fig.pos = "h",
+    fig.pos = "!htb",
     dev.args = list(family = "Palatino"))
 
-# # Reads the codes for the paper
-# read_chunk("codes/rbras2018b.R")
+# Reads the codes for the paper
+read_chunk("codes/rbras2018b.R")
+
+@
+
+<<load-functions>>=
+
+library(dplyr)
+library(purrr)
+library(lattice)
+library(latticeExtra)
+library(gridExtra)
+library(bbmle)
+
+source("codes/functions.R")
+source("codes/lattice-panels.R")
 
 @
 
@@ -120,17 +135,282 @@ opts_chunk$set(
 
 \section{Introdução}
 
+Importantes avanços na área de análise de dados na forma de contagens
+têm sido relatados na literatura. Dentre eles, citam-se, principalmente,
+métodos para modelar diferentes níveis de dispersão, uma vez que a
+abordagem via modelo linear generalizado de Poisson supõe equidispersão,
+o que raramente ocorre em dados reais.
+
+O caso mais comum de falha da suposição de equidispersão e,
+consequentemente, com mais abordagens possíveis para modelagem, é a
+superdispersão (média $<$ variância). A subdispersão (média $>$
+variância) é menos comum na prática, no entanto têm crescido o número de
+publicações relatando contagens subdispersas.
+
+As alternativas de análise de contagens não equidispersas estão,
+geralmente, relacionadas com as causas da não equidispersão. Neste
+artigo são revisados os modelos COM-Poisson, \textit{Gamma-Count},
+Poisson generalizada e Poisson-Tweedie, alternativas bastante flexíveis
+nesse contexto. A aplicação dos modelos é realizada para análise de
+um estudo em entomologia.
+
+\subsubsection*{Estudo de caso: danos em milho}
+
+Para ilustrar a análise de dados considerando os modelos citados,
+considera-se um conjunto de dados provenientes de um estudo em
+entomologia sobre a espécie \textit{Sitophilus zeamais}, principal praga
+de milho no Brasil. Nesse estudo, registrou-se o número de progênies
+(insetos emergentes) da praga em placas de petri, após 60 dias de
+acompanhamento. As placas foram tratadas com diferentes
+substratos da planta (Folha, Ramo, Semente) e apenas com água
+(Controle). Esse estudo foi conduzido no delineamento interamente
+casualizado com 10 repetições de cada tratamento.
+
 \section{Modelos probabilísticos}
 
-\section{Análise de dados}
+\subsubsection*{Distribuição COM-Poisson}
+
+A distribuição COM-Poisson é a principal representante da família de
+distribuições Poisson ponderadas (WPD) \citep{DelCastillo1998}. Uma
+variável aleatória $Y$ pertence à família WPD se sua função massa de
+probabilidade puder ser escrita como
+\begin{equation}
+  \label{eqn:pmf-wpd}
+  \Pr(Y = y) = \frac{w(y) \exp(-\lambda)\lambda^y}{
+    y! \text{E}_\lambda[w(Y)]}, \quad y \in \mathbb{N},
+\end{equation}
+em que $\text{E}_\lambda(\cdot)$ é o valor médio calculado a partir de
+uma variável aleatória Poisson de parâmetro $\lambda$, chamada de
+constante de normalização; e $w(y)$ é uma função peso, não negativa e
+tal que $\text{E}_\lambda[w(Y)]$ seja finita. A função peso
+$w(y) \equiv w(y, \nu)$, pode depender de um parâmetro adicional de tal
+forma que sub e superdispersão sejam abrangidas. Obtém-se a distribuição
+COM-Poisson para $w(y, \nu) = (y!)^{1-\nu}$, para $\nu \geq 0$.
+
+Um inconveniente do modelo COM-Poisson é que os momentos média e
+variância, em geral, não são obtidos em forma fechada. A partir de uma
+aproximação para a média, \citet{RibeiroJr2018} propõem uma
+reparametrização, em que $\mu = \lambda^{1/\nu} - (\nu - 1)/2\nu$. Neste
+artigo considera-se a COM-Poisson reparametrizada para média.
+
+\subsubsection*{Distribuição \textit{Gamma-Count}}
+
+A distribuição \textit{Gamma-Count} é uma generalização da distribuição
+Poisson que resulta da relação da Poisson com a distribuição do tempo
+entre eventos. Para a distribuição \textit{Gamma-Count}, assume-se que
+os tempos entre eventos segue o modelo gama, ao passo que para a Poisson
+os tempos são exponencialmente distribuídos. Seguindo
+\citet{Winkelmann1995}, a função massa de probabilidade de uma variável
+aleatória $Y$ que segue o modelo \textit{Gamma-Count} pode ser escrita
+como
+\begin{equation}
+  \label{eqn:pmf-gammacount}
+  \Pr(Y = y) =
+  \int_0^T \frac{\kappa^{y\alpha} t^{y\alpha - 1}}{\Gamma(y\alpha)
+    \exp(\kappa t)} dt -
+  \int_0^T \frac{\kappa^{(y+1)\alpha} t^{(y+1)\alpha - 1}}{
+    \Gamma[(y+1)\alpha] \exp(\kappa t)} dt,
+\end{equation}
+que não tem forma fechada, a menos do caso particular $\alpha=1$, quando
+a distribuição reduz-se à Poisson. Os momentos da distribuição também
+não são obtidos em forma fechada. \citet{Winkelmann1995} mostra que para
+intervalos de observação suficientemente grandes, $T\to\infty$, $Y$ é
+assintoticamente normal com média $\kappa T / \alpha$ e variância
+$\kappa T/\alpha^2$. Consequentemente, a distribuição
+\textit{Gamma-Count} é capaz de modelar superdispersão
+$(0 < \alpha < 1)$ e subdispersão $(\alpha > 1)$.
+
+\subsubsection*{Distribuição Poisson generalizada}
+
+A distribuição Poisson generalizada é resultante de uma forma limite da
+distribuição binomial negativa generalizada e pode modelar sub e
+superdispersão \citep{Zamani2012}. Existem duas parametrizações bem
+conhecidas para a distribuição Poisson generalizada. Sob a
+parametrização de média, a função massa de probabilidade de uma variável
+aleatória $Y$ que segue a distribuição Poisson generalizada é dada por
+\begin{equation}
+  \label{eqn:pmf-gpoisson}
+  \Pr(Y=y) = \left ( \frac{\mu}{1+\sigma \mu} \right )^y
+    \frac{(1+\sigma y)^{y-1}}{y!}
+    \exp \left [ - \mu \frac{(1 + \sigma y)}{( 1 + \sigma \mu)}
+    \right ],
+\end{equation}
+para $\mu>0$ e
+$\alpha > \text{min}[ -\text{max}(y_i^{-1}),
+-\text{max}(\mu_i^{-1})]$.
+
+Os momentos da distribuição nessa parametrização são $\text{E}(Y) = \mu$
+e $\text{Var}(Y) = \mu (1 + \mu\sigma)^2$, que garantem bastante
+flexibilidade à distribuição, uma vez que a variância é determinada como
+uma função cúbica de $\mu$.
+
+Aplicações do modelo de regressão Poisson generalizada são pouco
+reportadas na literatura. Embora bastante flexível, a grande dificuldade
+desse modelo reside na complicada restrição do espaço paramétrico, que é
+difícil de se incorporar, de forma eficiente, no processo de estimação.
+
+\subsubsection*{Distribuição Poisson-Tweedie}
+
+A distribuição Poisson-Tweedie é um caso geral dos modelos Poisson
+hierárquicos, especificados em dois estágios \citep[Seção
+4.6]{Jorgensen1997}. Sendo $\text{Tw}_p(\mu, \phi)$ a notação para a
+ditribuição Tweedie, a distribuição Poisson-Tweedie resulta da
+especificação
+\begin{equation}
+  \label{eqn:espec-ptw}
+  Y \mid Z \sim \text{Po}(Z) \quad \text{em que } \quad
+    Z \sim \text{Tw}_p(\mu, \phi),
+\end{equation}
+que não tem forma fechada para função de probabilidade, exceto para
+casos especiais. A esperança e a variância de uma variável aleatória
+Poisson-Tweedie são $\text{E}(Y) = \mu$ e
+$\text{Var}(Y) = \mu + \phi\mu^p$. Devido à flexibilidade da
+distribuição Tweedie, a família Poisson-Tweedie também tem importantes
+casos particulares que incluem as distribuições Hermite $(p = 0)$,
+Neymann tipo-A $(p=1)$, Pólya-Aeppli $(p=1,5)$, binomial negativa
+$(p=2)$ e Poisson--inversa gaussiana $(p = 3)$ \citep{Bonat2018}.
+
+Pela definição (\ref{eqn:espec-ptw}), modelos Poisson-Tweedie só modelam
+superdispersão. \citet{Bonat2018} estendem essa distribuição para
+contemplar subdispersão, adotando apenas a especificação de momentos e
+permitindo a estimação de $\phi<0$ (sujeito a Var$(Y)>0$). Essa
+abordagem é análoga aos modelos de quase-verossimilhança e, a menos dos
+casos particulares, não se conhece a distribuição completa de $Y$ a
+partir apenas de sua média e variância, o que impossibilita o cálculo de
+probabilidades, por exemplo.
+
+\subsubsection*{Estudo das distribuições}
+
+<<compute_indexes, cache=TRUE>>=
+@
+
+Para explorar a flexibilidade dos modelos apresentados, considera-se o
+índice de dispersão DI$=\text{Var}(Y)/\text{E}(Y)$. Na
+\Cref{tab:models},
+define-se a notação dos modelos bem seus respectivos parâmetros de
+dispersão, momentos e a formulações para modelos de regressão.
+
+\begin{table}[ht]
+  \renewcommand{\arraystretch}{1.5}
+  \centering \small
+  \caption{Modelos probabilísticos para análise de dados de contagem.}
+  \label{tab:models}
+  \begin{tabular*}{\textwidth}{m{2.2cm}ccccc}
+    \toprule
+    & COM-Poisson & \textit{Gamma-Count} & Poisson generalizada &
+      Poisson-Tweedie \\
+    \midrule
+    Notação &
+      CMP$(\mu_i, \nu)$ &
+      GCT$(\kappa_i, \gamma)$ &
+      GPo$(\mu_i, \sigma)$ &
+      PTw$_p(\mu_i, \omega)$ \\
+    \makecell[l]{Parâmetro \\[-.8mm] de dispersão} &
+      \makecell{$\phi = \log(\nu)$ \\ $\nu > 0$} &
+      \makecell{$\gamma = \log(\alpha)$ \\ $\alpha > 0$} &
+      \makecell{$\sigma$ \\ $\sigma > c^*$} &
+      \makecell{$\omega$ \\ $\omega > 0$} \\
+    Esperança &
+      $\approx \mu_i$ &
+      $\overset{a}{\approx} \kappa_i / \alpha$ &
+      $\mu_i$ &
+      $\mu_i$ \\
+    Variância &
+      $\approx \mu_i / \nu$ &
+      $\overset{a}{\approx} \kappa_i / \alpha^2$ &
+      $\mu_i (1 + \sigma\mu_i)^2$ &
+      $\mu_i (1 + \omega\mu_i^{p-1})$ \\[0.1cm]
+    \makecell[l]{Índice de \\[-.8mm] dispersão (DI)} &
+      $\approx 1 / \nu$ &
+      $\overset{a}{\approx} 1 / \alpha$ &
+      $(1 + \sigma\mu_i)^2$ &
+      $1 + \omega\mu_i^{p-1}$ \\[-1.5mm]
+    Regressão &
+      $\mu_i = g^{-1}(\bm{x}_i^\top \bm{\beta})$ &
+      $\kappa_i = \alpha g^{-1}(\bm{x}_i^\top \bm{\beta}) $ &
+      $\mu_i = g^{-1}(\bm{x}_i^\top \bm{\beta})$ &
+      $\mu_i = g^{-1}(\bm{x}_i^\top \bm{\beta})$ \\
+    \bottomrule
+  \end{tabular*}
+  \\ \vspace{0.1cm}
+  \scriptsize \raggedright
+  $c^* = \text{min}[ -\text{max}(y_i^{-1}),
+    -\text{max}(\mu_i^{-1})]$;\; $\overset{a}{\approx}$ comportamento
+    assintótico quanto $T \to \infty$.
+\end{table}
+
+Na \Cref{fig:plot-dispersion-index}, são apresentados os índices de
+dispersão para os modelos COM-Poisson, \textit{Gamma-Count}, Poisson
+generalizado e Poisson-Tweedie. Os intervalos dos parâmetros de
+dispersão foram considerados de tal forma que se tenha DI$=4$ e
+$DI=0,25$ quando E$(Y)=50$ (para a distribuição Poisson-Tweedie o
+intervalo começa em 0, pois $\nexists\; \omega \mid \text{DI}<1$). Para
+a distribuição Poisson-Tweedie consideram-se 3 diferentes valores para o
+parâmetro $p$, $p=1,1$; $p=2$ (binomial negativa) e $p=3$
+(Poisson-inversa gaussiana). Diferentes comportamentos do índice de
+dispersão são observados nos modelos. Destaca-se a similaridade entre a
+COM-Poisson e \textit{Gamma-Count} e a flexibilidade da Poisson-Tweedie
+para modelar superdispersão.
+
+<<plot-dispersion-index, fig.width=9, fig.height=6.5, fig.cap="Índices de dispersão para diferentes combinações de parâmetros das distribuições COM-Poisson, \\textit{Gamma-Count}, Poisson generalizada e Poisson-Tweedie. As linhas tracejadas representam a equidispersão, DI$=1$.">>=
+@
+
+\section{Análise dos dados}
+
+<<fit-models, cache=TRUE>>=
+@
+
+<<fitted-values, cache=TRUE>>=
+@
+
+Para análise do número de insetos emergentes, consideram-se preditores
+com efeitos de tratamento para os quatro modelos apresentados. Os
+resultados mostram ajustes similares em termos do máximo da função de
+verossimilhança. Na \Cref{fig:fitted-plot}(a), são apresentados o
+gráfico de dispersão das contagens (em cinza) e os valores ajustados
+para a média das contagens com intervalos de confiança de 95\%. Para o
+modelo COM-Poisson, o mal condicionamento da função de verossimilhança
+impossibilitou a aproximação da matriz Hessiana no ponto de máximo e,
+consequentemente, o cálculo de intervalos de confiança. Na
+\Cref{fig:fitted-plot}(b), são apresentadas as relações
+média--variância. As variâncias calculadas sob o modelo COM-Poisson
+foram maiores que as demais em quase todo o intervalo. Para o modelo
+Poisson-Tweedie, cuja variância é uma função polinomial de ordem $p$, a
+relação média--variância é praticamente linear. A estimativa do
+parâmetro $p$ foi de \Sexpr{m1ptw[["Cov"]][1]}. No modelo Poisson
+generalizado, a relação parece ser aproximadamente quadrática
+($\hat{\sigma} = \Sexpr{m1gpo@coef[1]}$), com menores variâncias para
+E$(Y)$ entre 10 e 20 e maiores para E$(Y)$ próximos a 30, quando
+comparado aos outros modelos.
+
+<<fitted-plot, fig.width=8, fig.height=4, fig.cap="(a) Valores ajustados para a média do número de insetos emergentes com intervalos de confiança de 95\\% e (b) Relação média--variância para os modelos ajustados. Os pontos em cinza representam os valores observados.">>=
+@
 
 \section{Considerações finais}
 
+Nesse artigo, foram revisadas algumas recentes abordagens para análise
+de dados na forma de contagens. A gênesis de cada modelo foi
+apresentada, assim como um resumo comparativo com base no índice de
+dispersão e no comportamente da relação média--variância. As abordagens
+apresentadas foram aplicadas para análise do número de insetos
+emergentes sob diferentes substratos do milho. Os resultados da análise
+subsidiaram a discussão sobre a comparação dos modelos. Ambos os modelos
+apresentaram resultados bastante similares, porém, diferenças foram
+destacadas sobre as esperanças e variâncias obtidas para cada modelo
+ajustado.
+
+De forma geral, tem-se no artigo uma abrangente revisão de estratégias
+para análise de dados na forma de contagens, destacando as
+características dos modelos bem como suas respectivas formulações de
+forma que o leitor possa se familiarizar com os modelos e identificar
+possíveis extensões.
+
 %-------------------------------------------
 % Referências
-\pagebreak
+% \pagebreak
 
 \small
-\bibliography{rbras2018}
+% \setlength{\bibsep}{2pt}
+\bibliography{rbras2018b}
 
 \end{document}
