@@ -1,0 +1,645 @@
+\documentclass[11pt]{beamer}
+
+%=======================================================================
+% General packages
+\usepackage[british]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{multicol}
+\usepackage{mathtools} %% Funcionalidades (como \dcases)
+\usepackage{dsfont}    %% Para \mathds{1} Indicadora
+\usepackage{bm}
+
+%=======================================================================
+% For figures
+\usepackage{graphicx}
+\usepackage[export]{adjustbox}
+
+%% ======================================================================
+%% Fontes
+\usepackage{mathpazo}
+\usepackage{inconsolata}
+\usepackage{verbatim}
+
+\usefonttheme{professionalfonts}
+\usefonttheme{serif}
+
+%=======================================================================
+% For tables
+\usepackage[bottom]{footmisc}
+\usepackage{booktabs}
+\usepackage{threeparttable}
+\usepackage{tabularx}
+\usepackage{makecell}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\DeclareRobustCommand{\rchi}{{\mathpalette\irchi\relax}}
+\newcommand{\irchi}[2]{\raisebox{\depth}{$#1\chi$}}
+\usepackage{float}
+\makeatletter
+\def\@xfootnote[#1]{%
+  \protected@xdef\@thefnmark{#1}%
+  \@footnotemark\@footnotetext}
+\makeatother
+
+%=======================================================================
+% For captions
+\usepackage{caption}
+\captionsetup{
+  justification=raggedright,
+  singlelinecheck=false,
+  font=footnotesize
+}
+
+%% ======================================================================
+%% Cores para links
+\definecolor{url}{HTML}{000080}
+\definecolor{run}{HTML}{4A0082}
+\definecolor{col}{HTML}{6180A6}
+\usepackage{hyperref}
+\hypersetup{colorlinks, allcolors=., urlcolor=url, runcolor=run}
+
+%\setbeamercolor{bibliography entry author}{fg=black}
+%\usepackage[alf]{abntex2cite}
+\usepackage{natbib}
+\bibliographystyle{agsm}
+
+%% ======================================================================
+%% Tema e cores do documento
+\usetheme{CambridgeUS}
+\setbeamertemplate{itemize items}[triangle]
+\setbeamertemplate{navigation symbols}{}
+
+\setbeamertemplate{frametitle}{
+  \nointerlineskip
+  \begin{beamercolorbox}[sep=0.3cm, ht=1.8em,
+    wd=\paperwidth]{frametitle}
+    \vbox{}\vskip-2ex%
+    \strut\hspace*{3ex}\Large\bfseries\insertframetitle\strut
+    \vskip-0.8ex%
+  \end{beamercolorbox}
+}
+
+%% Slides em geral
+\setbeamercolor{frametitle}{bg=white, fg=col}
+\setbeamercolor{structure}{fg=col}
+\setbeamercolor{palette primary}{bg=gray!30, fg=col}
+\setbeamercolor{palette tertiary}{bg=col, fg=white}
+\setbeamercolor{footlinecolor}{fg=white,bg=col}
+\setbeamercolor{caption name}{fg=col}
+
+% \setbeamertemplate{frametitle continuation}{[\insertcontinuationcount]}
+\setbeamertemplate{frametitle continuation}{}
+
+%% Slide Inicial
+\setbeamertemplate{title page}[default]
+\setbeamercolor{title}{fg=col}
+\setbeamercolor{author}{fg=black!70}
+\setbeamercolor{institute}{fg=black!70}
+\setbeamercolor{date}{fg=black!70}
+\setbeamerfont{title}{series=\bfseries, size=\Large}
+
+%% ======================================================================
+%% Definição do cabeçalho e rodapé
+\setbeamerfont{headline}{size=\fontsize{5}{5}\selectfont}
+\setbeamertemplate{headline}{\bfseries
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.5\paperwidth, ht=2.2ex, dp=1ex, right,
+      rightskip=1em]{section in head/foot}
+      \hspace*{2ex}\insertsectionhead
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.5\paperwidth, ht=2.2ex, dp=1ex, left,
+      leftskip=1em]{subsection in head/foot}
+      \insertsubsectionhead\hspace*{2ex}
+    \end{beamercolorbox}}
+  \vskip0pt
+}
+
+\setbeamerfont{footline}{size=\fontsize{5}{5}\selectfont}
+\makeatletter
+\setbeamertemplate{footline}{\bfseries
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.3\paperwidth, ht=2.4ex, dp=1ex, right,
+      rightskip=1em]{footlinecolor}
+      \centering \insertshortauthor%
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.6\paperwidth, ht=2.4ex, dp=1ex, left,
+      leftskip=1em]{footlinecolor}
+      \hfill\insertshorttitle%
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.1\paperwidth, ht=2.4ex, dp=1ex, left,
+      leftskip=1em]{footlinecolor}
+      \centering Slide \insertframenumber
+    \end{beamercolorbox}}
+  \vskip0pt
+}
+\makeatother
+
+%% ======================================================================
+%% Layout do tableofcontents
+\setbeamertemplate{section in toc}{
+  {\color{col} \bfseries\inserttocsectionnumber.}~
+  {\leftskip=0.5em\color{black}\inserttocsection\par}
+}
+
+\setbeamertemplate{subsection in toc}{
+  {\color{col!80}
+  \bfseries\inserttocsectionnumber.\inserttocsubsectionnumber}~
+  \leftskip=2em{\color{black}\inserttocsubsection\par}
+}
+
+%% ======================================================================
+%% Formatando slides para seções e subseções
+\AtBeginSection[]{
+  \begin{frame}[c, allowframebreaks, noframenumbering]
+    \begin{center}
+      \textcolor{col}{\thesection} \\ \vspace{0.3cm}
+      \parbox{0.6\textwidth}{
+        \centering \textcolor{col}{\LARGE \bf \insertsection}}\\
+    \end{center}
+  \end{frame}
+}
+
+\AtBeginSubsection{
+  \begin{frame}[c, allowframebreaks, noframenumbering]
+    \begin{center}
+      \textcolor{col}{\thesection.\thesubsection} \\ \vspace{0.3cm}
+      \parbox{0.6\textwidth}{
+        \centering \textcolor{col!80}{\large \insertsection}\\
+        \centering \textcolor{col}{\Large \bf \insertsubsection}}\\
+    \end{center}
+  \end{frame}
+}
+
+%% ======================================================================
+%% Metadados não disponíveis no YAML com o atual default.tex template
+
+\title[Strategies for analysis of count data]{
+  Strategies for analysis of under- and overdispersed count data}
+
+\author[Demetrio, C.G.B. \& Ribeiro Jr, E.E.]{
+  Eduardo Elias Ribeiro Junior \inst{1} \inst{2} \\
+  Clarice Garcia Borges Demétrio \inst{2}
+}
+
+\institute{
+  \inst{1} Statistics and Geoinformation Laboratory (LEG-UFPR) \\
+  \inst{2} Department of Exact Sciences (ESALQ-USP)
+}
+
+\date{\small \today \\[0.2cm]
+  \url{jreduardo@usp.br} | \url{edujrrib@gmail.com}}
+
+<<read, include=FALSE>>=
+knitr::read_chunk("slides.R")
+@
+<<setup, include=FALSE>>=
+@
+
+\begin{document}
+
+\begin{frame}[plain, noframenumbering]
+  \titlepage
+\end{frame}
+
+\begin{frame}[noframenumbering]{Outline}
+  \tableofcontents[hideallsubsections]
+\end{frame}
+
+\section{Background}
+
+\begin{frame}{Corn damage: \textit{Sitophilus zeamais} progeny}
+
+  \begin{itemize}
+    \item[] \textbf{Motivation}:
+    \item Study in Entomology;
+    \item Major pest of stored maize in Brazil is \textit{Sitophilus
+        zeamais}.\\[0.3cm]
+    \item[] \textbf{Objective}:
+    \item Assess the insecticide action of organic extracts of
+      Annonacae.\\[0.3cm]
+    \item[] \textbf{Experiment}:
+    \item Design: completely randomized experiment with 10 replicates;
+    \item Experimental unit: petri dishes containing 10g of corn treated
+      with extracts;
+    \item Factor: Extracts prepared with different parts of the plant
+      (seeds, leaves and branches) or just water (control).
+    \item Response variable: Number of emerged insects (progeny) after
+      60 days.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Descriptive analysis}
+
+\begin{columns}
+  \begin{column}{0.5\textwidth}
+<<plot-corn, fig.width=3.8, fig.height=2.8, fig.cap="Number of emerged insects for each extract">>=
+@
+  \end{column}
+
+  \begin{column}{0.5\textwidth}
+<<table-corn, results="asis">>=
+@
+\vspace*{1.3cm}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+\begin{frame}{Poisson model and limitations}
+
+  \begin{itemize}
+    \item[] {\bf GLM framework \citep{Nelder1972}}
+    \item Provide suitable distribution for a counting random variables;
+    \item Efficient algorithm for estimation and inference;
+    \item Implemented in many software.
+      \vspace{0.3cm}
+    \item[] {\bf Poisson model}
+    \item Relationship between mean and variance,
+      $\text{E}(Y)=\text{Var}(Y)$;
+      \vspace{0.3cm}
+    \item[] {\bf Main limitations}
+    \item Overdispersion (more common), $\text{E}(Y)<\text{Var}(Y)$;
+    \item Underdispersion (less common), $\text{E}(Y)>\text{Var}(Y)$.
+  \end{itemize}
+
+\end{frame}
+
+\section{Alternative Models}
+
+\begin{frame}{Proposing of alternative models}
+
+  The origin of such phenomena of under- and overdispersion can be
+  interpreted as a failure of some basic assumptions of the model
+  \citep{Hinde1998}.
+  \vspace{0.3cm}
+
+  Examples of Poisson process failures:
+  \begin{itemize}
+  \item Variability of experimental material (Random-effects);
+  \item Aggregate level data (Compound distributions);
+  \item Non-constancy of the hazard function of waiting times
+    (Duration dependence);
+  \end{itemize}
+  \vspace{0.3cm}
+
+  We shall present the genesis and definition of models:
+  \begin{itemize}
+    \item COM-Poisson;
+    \item Gamma-Count;
+    \item Generalized Poisson; and
+    \item Poisson-Tweedie.
+  \end{itemize}
+\end{frame}
+
+\subsection{COM-Poisson model}
+
+\begin{frame}{Weighted Poisson models}
+
+  The family of weighted Poisson distributions (WPD)
+  \citep{DelCastillo1998}, weights the Poisson probability function by a
+  suitable function,
+  $$
+    \Pr(Y = y) = \frac{w(y) \exp(-\lambda)\lambda^y}{
+    y! \text{E}_\lambda[w(Y)]}, \quad y \in \mathbb{N},
+  $$
+  where $\text{E}_\lambda(\cdot)$ denotes the mean value with respect to
+  the Poisson random variable with parameter $\lambda$ and $w(y)$ is a
+  weight function.\\[0.5cm]
+
+  The weight function may depend on extra parameter to ensure more
+  flexibility to the distribution.
+\end{frame}
+
+\begin{frame}{COM-Poisson distribution}
+
+  The COM-Poisson \citep{Shmueli2005} belongs to the family of weighted
+  Poisson distributions and it is obtained when
+  $w(y,\nu) = (y!)^{1-\nu}$. The probability mass function of $Y$ a
+  COM-Poisson random variable is
+  \begin{equation*}
+    \label{eqn:pmf-compoisson}
+    \Pr(Y = y) = \frac{\lambda^y \exp(-\lambda)}{
+      (y!)^\nu \text{E}_\lambda[(Y!)^{1-\nu}]} =
+    \frac{\lambda^y}{(y!)^\nu \text{Z}(\lambda, \nu)}, \quad
+    \text{Z}(\lambda,\nu) = \sum_{j=0}^\infty \frac{\lambda^j}{(j!)^\nu},
+  \end{equation*}
+  where $\nu$ is the dispersion parameter. \\[0.5cm]
+
+  The moments of distribution are approximated by
+  $$
+  \text{E}(Y) \approx \lambda^{1/\nu} - \frac{\nu - 1}{2\nu} \qquad
+  \textrm{and} \qquad
+  \text{Var}(Y) \approx \frac{\lambda^{1/\nu}}{\nu}.
+  $$
+\end{frame}
+
+\begin{frame}{Mean-parametrized and regression models}
+
+  Following \citet{RibeiroJr2018}, we use the parametrization given by
+  introducing $\mu$ based on mean approximation
+  $$\mu = h(\lambda, \nu) = \lambda^{1/\nu} - \frac{\nu - 1}{2\nu}
+    \quad \Rightarrow \quad
+    \lambda = h^{-1}(\mu, \nu) = \left (\mu +
+      \frac{(\nu - 1)}{2\nu} \right )^\nu
+  $$
+
+  \textbf{Regression models}
+  $$
+  Y_i \sim \text{CMP}(\nu, \mu_i), \quad \text{where} \quad
+  \mu_i = g^{-1}(\bm{x}_i^\top\bm{\beta})
+  $$
+\end{frame}
+
+\subsection{Gamma-Count model}
+
+\begin{frame}{Renewal process}
+
+  Following \citet{Winkelmann1995},
+  \begin{itemize}
+  \item Let $\tau_k>0,\, k\in\mathbb{N}^*$, denote the waiting times
+    between the $(k-1)$ and the $k$-$ht$ event;
+  \item Let $\vartheta_n$, denote the arrival time of the $n$-$th$
+    event, so $\vartheta_n = \sum_{k=1}^n \tau_k$.
+  \item Finally, denote $Y_T$ the number of events within a $(0, T)$
+    interval.
+  \end{itemize}
+
+  $$
+    \begin{aligned}
+      Y_T &< y \iff \vartheta_y \geq T \\
+      \Pr(Y_T < y) &= \Pr(\vartheta_y \geq T) = 1 - \text{F}_y(T), \\
+      \Pr(Y_T = y) &= \Pr(Y_T < y) - \Pr(Y_T < y + 1) \\
+      \Pr(Y_T = y) &= \text{F}_{\vartheta_y}(T) -
+      \text{F}_{\vartheta_{y+1}}(T),
+    \end{aligned}
+  $$
+  where $\text{F}_{\vartheta_n}(T)$ is the cumulative density function
+  of $\vartheta_n$ and $T$ is the interval of the counting.
+\end{frame}
+
+\begin{frame}{Gamma-Count distribution}
+
+  For the Gamma-Count distribution we assume $\tau_k$ are identically
+  and independently Gamma$(\alpha, \kappa)$. So the reproductive property
+  of Gamma random variables, leads to $\vartheta_y \sim
+  \text{Gamma}(y\alpha, \kappa)$. \\[0.5cm]
+
+  Consequently, the probability mass function of $Y$ a Gamma-Count
+  random variable is
+  \begin{equation*}
+    \label{eqn:pmf-gammacount}
+    \Pr(Y_T = y) =
+    \int_0^T \frac{\kappa^{y\alpha} t^{y\alpha - 1}}{\Gamma(y\alpha)
+      \exp(\kappa t)} dt -
+    \int_0^T \frac{\kappa^{(y+1)\alpha} t^{(y+1)\alpha - 1}}{
+      \Gamma[(y+1)\alpha] \exp(\kappa t)} dt,
+  \end{equation*}
+  a difference between two Gamma cumulative density functions,
+  $\text{G}(y\alpha, \kappa) - \text{G}((y+1)\alpha, \kappa)$, where
+  $\text{G}(\alpha, \kappa)$ is the cumulative function $\text{F}_y(T)$
+  for the Gamma variable with parameters $\alpha$ and $\kappa$.
+\end{frame}
+
+\begin{frame}{Properties and regression models}
+
+  \citet{Winkelmann1995} showed for increasing $T$, i.e. high counts, it
+  holds that
+  $$
+  Y_T \overset{\textit{\tiny asy}}{\sim}
+  \mathcal{N}\left (
+    \frac{\kappa T}{\alpha}, \frac{\kappa T}{\alpha^2}
+  \right ),
+  $$
+  thus the limiting variance-mean ratio equals a constant $1/\alpha$.
+  \vspace{0.5cm}
+
+  \textbf{Regression models}
+  $$
+  Y_i \sim \text{GCT}(\alpha, \kappa_i), \quad \text{where} \quad
+  \kappa_i = \alpha g^{-1}(\bm{x}_i^\top\bm{\beta}),
+  $$
+
+\end{frame}
+
+\subsection{Generalized Poisson model}
+
+\begin{frame}{Generalized Poisson distribution}
+
+  The distribution results from the limiting form of the generalized
+  negative binomial distribution \citep{Zamani2012}.\\[0.3cm]
+
+  The probability mass function is given by
+  $$
+  \Pr(Y=y) =
+  \begin{cases}
+    \frac{\lambda (\lambda + y\gamma)^{y-1}
+      \exp(-\lambda - y\gamma)}{y!}, & y =0, 1,2,\ldots \\
+    0 & \text{for } y > m, \text{when } \gamma < 0,
+  \end{cases}
+  $$
+  where $\lambda>0$, max$(-1, -\lambda/4) \leq \gamma \leq 1$ and $m$ is
+  the largest positive integer for which $\theta + m\lambda>0$ when
+  $\lambda$ is negative.
+  \vspace{0.3cm}
+  \begin{itemize}
+    \item E$(Y) = \lambda(1-\gamma)^{-1}$;
+    \item Var$(Y) = \lambda(1-\gamma)^{-3}$.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Mean-parametrization and regression models}
+
+  In order to specify regression models based on Generalized Poisson
+  distribution, we use the mean-parametrization
+  $$
+  \lambda = \frac{\mu}{1 + \sigma \mu} \quad \text{ and } \quad
+  \gamma = \frac{\sigma \mu}{ 1 + \sigma \mu}.
+  $$
+
+  Under this parametrization, the moments are given by
+  \begin{itemize}
+    \item $\text{E}(Y) = \mu$;
+    \item $\text{Var}(Y) = \mu (1 + \mu\sigma)^2$.
+  \end{itemize}
+  \vspace{0.3cm}
+
+  \textbf{Regression models}
+  $$
+  Y_i \sim \text{GPo}(\mu_i, \sigma), \quad \text{where} \quad
+  \mu_i = g^{-1}(\bm{x}_i^\top\bm{\beta}),
+  $$
+\end{frame}
+
+\subsection{Poisson-Tweedie model}
+
+\begin{frame}{General two-stage models}
+
+  The Poisson-Tweedie class of distributions is a general case of the
+  two-stages models \citep{Jorgensen2016}. This family is given by the
+  following hierarchical specification
+  $$
+  Y \mid Z \sim \text{Po}(Z) \quad \text{where } \quad
+    Z \sim \text{Tw}_p(\mu, \phi),
+  $$
+  and $\text{Tw}_p$ denotes a Tweedie distribution with power parameter
+  $p$, $p \in (-\infty, 0] \cup [1, \infty)$, $\mu \in \Omega_p$ and
+  $\phi > 0$.
+  \vspace{0.4cm}
+
+  The probability mass function for this distribution cannot be obtained
+  in closed form apart from the special case corresponding to the
+  Negative Binomial distribution, $p=2$.
+
+\end{frame}
+
+\begin{frame}{Second-moments assumptions and regression}
+
+  Although the probability function cannot be obtained, the moments mean
+  and variance can,
+  $$
+  \begin{aligned}
+    \text{E}(Y)   &= \text{E}[\text{E}(Y \mid Z)] = \mu \\
+    \text{Var}(Y) &= \text{Var}[\text{E}(Y \mid Z)] +
+    \text{E}[\text{Var}(Y \mid Z)] = \mu + \phi\mu^p.
+  \end{aligned}
+  $$
+
+  The Poisson-Tweedie has Hermite $(p = 0)$, Neymann tipo-A $(p=1)$,
+  Pólya-Aeppli $(p=1,5)$, negative binomial $(p=2)$ and Poisson--inverse
+  Gaussian $(p = 3)$ as special cases \citep{Bonat2018}.
+  \vspace{0.4cm}
+
+  \textbf{Regression models}
+  $$
+  Y_i \sim \text{PTw}_p(\mu_i, \omega), \quad \text{where} \quad
+  \mu_i = g^{-1}(\bm{x}_i^\top\bm{\beta}),
+  $$
+
+\end{frame}
+
+\subsection*{Comparison of the distributions}
+
+\begin{frame}{Summary of distributions}
+
+  \begin{table}[ht]
+  \renewcommand{\arraystretch}{1.5}
+  \centering \scriptsize
+  \caption{Probabilistic models for analysis of count data.}
+  \label{tab:models}
+  \begin{tabular*}{\textwidth}{m{1.2cm}ccccc}
+    \toprule
+    & COM-Poisson & Gamma-Count & Generalized Poisson &
+      Poisson-Tweedie \\
+    \midrule
+    Notation &
+      CMP$(\mu_i, \nu)$ &
+      GCT$(\kappa_i, \gamma)$ &
+      GPo$(\mu_i, \sigma)$ &
+      PTw$_p(\mu_i, \omega)$ \\
+    \makecell[l]{Dispersion \\[-.8mm] parameter} &
+      \makecell{$\phi = \log(\nu)$ \\ $\nu > 0$} &
+      \makecell{$\gamma = \log(\alpha)$ \\ $\alpha > 0$} &
+      \makecell{$\sigma$ \\ $\sigma > c^*$} &
+      \makecell{$\omega$ \\ $\omega > 0$} \\
+    Expectation &
+      $\approx \mu_i$ &
+      $\overset{a}{\approx} \kappa_i / \alpha$ &
+      $\mu_i$ &
+      $\mu_i$ \\
+    Variance &
+      $\approx \mu_i / \nu$ &
+      $\overset{a}{\approx} \kappa_i / \alpha^2$ &
+      $\mu_i (1 + \sigma\mu_i)^2$ &
+      $\mu_i (1 + \omega\mu_i^{p-1})$ \\[0.1cm]
+    \makecell[l]{Dispersion \\[-.8mm] index (DI)} &
+      $\approx 1 / \nu$ &
+      $\overset{a}{\approx} 1 / \alpha$ &
+      $(1 + \sigma\mu_i)^2$ &
+      $1 + \omega\mu_i^{p-1}$ \\[-1.5mm]
+    Regression &
+      $\mu_i = g^{-1}(\bm{x}_i^\top \bm{\beta})$ &
+      $\kappa_i = \alpha g^{-1}(\bm{x}_i^\top \bm{\beta}) $ &
+      $\mu_i = g^{-1}(\bm{x}_i^\top \bm{\beta})$ &
+      $\mu_i = g^{-1}(\bm{x}_i^\top \bm{\beta})$ \\
+    \bottomrule
+  \end{tabular*}
+  \\ \vspace{0.1cm}
+  \scriptsize \raggedright
+  $c^* = \text{min}[ -\text{max}(y_i^{-1}),
+  -\text{max}(\mu_i^{-1})]$;\; $\overset{a}{\approx}$ asymptotically
+  when $T \to \infty$.
+\end{table}
+\end{frame}
+
+\begin{frame}
+
+<<compute-indexes, cache=TRUE>>=
+@
+
+\vspace{-0.3cm}
+<<plot-dispersion-index, cache=TRUE, fig.width=10, fig.height=7, fig.cap="Dispersion indexes for different parameters of the CMP, GCT, GPo and PTW.">>=
+@
+
+\end{frame}
+
+\section{Data analysis}
+
+\begin{frame}{Model specification}
+  \small
+
+  \begin{itemize}
+  \item \textbf{Model:} $\log(\mu_{ij}) = \beta_0 + \tau_j$.
+  \item $i=1,2,\ldots,10$; $j=1,2,3,4$;
+  \item Restriction $\tau_1=0$.
+  \end{itemize}
+  \vspace{-0.3cm}
+<<fitted-models, cache=TRUE>>=
+@
+
+<<ctab-models, results="asis">>=
+@
+
+\end{frame}
+
+\begin{frame}{Fitted values}
+
+<<fitted-values>>=
+@
+
+<<fitted-plot, fig.width=8, fig.height=4, fig.cap="(a) Fitted values with confidence intervals (95\\%) and (b) Mean--variance relationship for the fitted models.">>=
+@
+
+\end{frame}
+
+\section{Final remarks}
+
+\begin{frame}{Concluding remarks}
+
+  \textbf{Summary}
+  \begin{itemize}
+  \item Over- / underdispersion are phenomena that needs caution;
+  \item Generalizations of Poisson distribution can be derived of
+    Poisson process failures;
+  \item For most practical problems, the models are similar in terms of
+    fitted values and confidence intervals;
+  \item The mean-variance relationship characterizes them.
+  \end{itemize}
+  \vspace{0.5cm}
+  \textbf{Future work}
+  \begin{itemize}
+    \item Perform a extensive simulation to assess the capacity of each
+      model.
+  \end{itemize}
+\end{frame}
+
+\section*{Bibliography}
+\begin{frame}[allowframebreaks, t]{References}
+  \footnotesize
+  \vspace*{-0.5cm}
+  \bibliography{../rbras2018b.bib}
+\end{frame}
+
+\end{document}
