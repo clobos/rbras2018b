@@ -266,7 +266,7 @@ fit_cm <- function(formula,
     # Ajuste do modelo
     compute_loglik <- settings[["ll"]]
     bbmle::parnames(compute_loglik) <- names(start)
-    fixed <- list(X = X, y = y, formula = formula, model = model)
+    fixed <- list(y = y, X = X, formula = formula, model = model)
     if (model == "CMP") fixed[["sumto"]] <- sumto
     fit <- suppressWarnings(
         bbmle::mle2(compute_loglik,
@@ -381,4 +381,85 @@ predict_cm <- function(object,
     }
     if (augment_data) out <- cbind(newdata, out)
     return(out)
+}
+
+
+#-----------------------------------------------------------------------
+# Compute log-Liklihood for Poisson-Tweedie models (functions by
+# Bonat2018)
+library(tweedie)
+library(statmod)
+
+integrand <- function(x, y, mu, phi, power) {
+    int = dpois(y, lambda = x)*dtweedie(x, mu = mu,
+                                        phi = phi, power = power)
+    return(int)
+}
+
+# Numerical integration using Gauss-Laguerre method
+gauss_laguerre <- function(integrand, n_pts, y, mu, phi, power) {
+    pts <- gauss.quad(n_pts, kind="laguerre")
+    integral <- sum(pts$weights*integrand(pts$nodes, y = y, mu = mu,
+                                          phi = phi, power = power)/
+                        exp(-pts$nodes))
+    return(integral)
+}
+gauss_laguerre_vec <- Vectorize(FUN = gauss_laguerre,
+                                vectorize.args = "y")
+
+# Numerical integration using Monte Carlo method
+monte_carlo <- function(integrand, n_pts, y, mu, phi, power) {
+    pts <- rtweedie(n_pts, mu = mu, phi = phi, power = power)
+    norma <- dtweedie(pts, mu = mu, phi = phi, power = power)
+    integral <- mean(integrand(pts, y = y, mu = mu, phi = phi,
+                               power = power)/norma)
+    return(integral)
+}
+
+# Probability mass function Poisson-Tweedie
+dptweedie_aux <- function(y, mu, phi, power, n_pts, method) {
+    if(method == "laguerre" | y > 0) {
+        pmf <- gauss_laguerre(integrand = integrand, n_pts = n_pts,
+                              y = y, mu = mu, phi = phi, power = power)
+    }
+    if(method == "laguerre" & y == 0) {
+        v.y <- round(10*sqrt(mu + phi*mu^power),0)
+        if(v.y > 1000) {v.y <- 1000}
+        #print(v.y)
+        y.grid <- 0:v.y
+        temp <- gauss_laguerre_vec(integrand = integrand, n_pts = n_pts,
+                                   y = y.grid, mu = mu, phi = phi,
+                                   power = power)
+        pmf <- 1-sum(temp)+temp[1]
+    }
+    if(method == "MC") {
+        pmf <- monte_carlo(integrand = integrand, n_pts = n_pts,
+                           y = y, mu = mu, phi = phi, power = power)
+    }
+    return(pmf)
+}
+
+# Vectorize version
+dptweedie <- Vectorize(FUN = dptweedie_aux, vectorize.args = c("y","mu"))
+
+# LogLik function
+logLik.mcglm <- function(object, n_pts = 50L, method = "laguerre"){
+    y <- as.vector(object$observed)
+    mu <- object$fitted
+    phi <- coef(object, type = "tau")[["Estimates"]]
+    power <- coef(object, type = "power")[["Estimates"]]
+    # Conditions
+    if (object$variance != "poisson_tweedie" | phi < 0) {
+        stop("Method is not valid")
+    }
+    ll <- sum(log(dptweedie(y = y,
+                            mu = mu,
+                            phi = phi,
+                            power = power,
+                            n_pts = n_pts,
+                            method = method)))
+    attr(ll, "df") <- nrow(coef(object))
+    attr(ll, "nobs") <- length(mu)
+    class(ll) <- "logLik"
+    return(ll)
 }
